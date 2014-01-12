@@ -1,0 +1,27 @@
+{
+  "name": "honeypot-for-tcp-32764",
+  "version": "1.0.0",
+  "description": "Honeypot for router backdoor (TCP 32764)",
+  "main": "server.coffee",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "forever -w -c node_modules/.bin/coffee start server.coffee",
+    "stop": "forever -w -c node_modules/.bin/coffee stop server.coffee"
+  },
+  "author": {
+    "name": "Jan Philipp",
+    "email": "knallisworld@googlemail.com"
+  },
+  "contributors": [{
+    "name": "Sebastian Janzen",
+    "email": "sebastian@janzen.it"
+  }
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "forever": "~0.10.11",
+    "jspack": "0.0.1",
+    "buffertools": "~2.0.0",
+    "coffee-script": "~1.6.3"
+  }
+}
