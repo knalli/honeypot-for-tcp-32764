@@ -20,6 +20,7 @@ PSEUDO_VERSION = '1.2.3'
 
 pseudoContext = {}
 clients = []
+logger = new require('LogRedis')()
 
 # TODO: How we get the public ip?
 #require('dns').lookup require('os').hostname(), (err, address, fam) ->
@@ -36,6 +37,7 @@ buildMessage = (code, payload = '') ->
 # Logging
 log = (socket, message) ->
   util.log "Attacker #{socket.name}: #{message}"
+  if logger then logger.log message
 
 # Handle an incoming call and response probably good..
 # @param socket - tcp socket
@@ -119,14 +121,14 @@ server = net.createServer (socket) ->
 
   # define some socket-only data
   socket.name = "#{socket.remoteAddress}:#{socket.remotePort}"
-  console.log "Client (#{socket.name}) joined..."
+  log "Client (#{socket.name}) joined..."
 
   clients.push socket
 
   socket.on 'data', (buffer) ->
     # Make the "poc.py" be happy with this here.
     if "#{buffer}" is "blablablabla"
-      util.log "Ignore 'blablablabla' request."
+      log "Ignore 'blablablabla' request."
       handle socket
       return
     try
@@ -145,7 +147,7 @@ server = net.createServer (socket) ->
         payload = payload.slice(0, payloadLength-1)
         handle socket, type, payload
       else
-        console.log "Skipping message because invalid header: #{header}"
+        log "Skipping message because invalid header: #{header}"
       return
     catch e
       log(socket, "Processing failed: #{e.message}")
@@ -153,12 +155,12 @@ server = net.createServer (socket) ->
 
   socket.on 'end', ->
     clients.splice(clients.indexOf(socket), 1)
-    console.log "Client (#{socket.name}) left."
+    log "Client (#{socket.name}) left."
     return
 
   socket.on 'error', (error) ->
     clients.splice(clients.indexOf(socket), 1)
-    console.log "ERROR: #{util.inspect error}"
+    log "ERROR: #{util.inspect error}"
 
 server.listen 32764
 
