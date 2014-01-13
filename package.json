@@ -12,16 +12,18 @@
     "name": "Jan Philipp",
     "email": "knallisworld@googlemail.com"
   },
-  "contributors": [{
-    "name": "Sebastian Janzen",
-    "email": "sebastian@janzen.it"
-  }
+  "contributors": [
+    {
+      "name": "Sebastian Janzen",
+      "email": "sebastian@janzen.it"
+    }
   ],
   "license": "MIT",
   "dependencies": {
     "forever": "~0.10.11",
     "jspack": "0.0.1",
     "buffertools": "~2.0.0",
-    "coffee-script": "~1.6.3"
+    "coffee-script": "~1.6.3",
+    "redis": "~0.10.0"
   }
 }

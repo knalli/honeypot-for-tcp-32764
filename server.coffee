@@ -22,13 +22,16 @@ PSEUDO_VERSION = '1.2.3'
 pseudoContext = {}
 clients = []
 
+# Add redis logger with key-prefix
+#LogRedis = require './LogRedis'
+#loggers = [new LogRedis()]
+
 # If you would like to use canihazip.com, uncomment the following.
 # Otherwise, select any other website which returns your public ip.
 #require('http').request("http://canihazip.com/s", (res) ->
 #  res.on "data", (chunk) -> PSEUDO_PUBLIC_IP += chunk
 #  res.on "end", -> console.log "Resolved public ip to #{PSEUDO_PUBLIC_IP}"
 #).end()
-
 
 # build message data as byte buffer
 # @param code - the result/status code
@@ -41,6 +44,8 @@ buildMessage = (code, payload = '') ->
 # Logging
 log = (socket, message) ->
   util.log "Attacker #{socket.name}: #{message}"
+  if loggers?.length
+    logger.log socket, message for logger in loggers
 
 # Handle an incoming call and response probably good..
 # @param socket - tcp socket
@@ -120,18 +125,24 @@ handle = (socket, type = 0, payload) ->
 
 
 # Create and open TCP server
-server = net.createServer (socket) ->
+server = net.createServer()
+
+# attach loggers
+if loggers?.length
+   logger.attachToServer server for logger in loggers
+
+server.on 'connection', (socket) ->
 
   # define some socket-only data
   socket.name = "#{socket.remoteAddress}:#{socket.remotePort}"
-  console.log "Client (#{socket.name}) joined..."
+  log(socket, "Client joined...")
 
   clients.push socket
 
   socket.on 'data', (buffer) ->
     # Make the "poc.py" be happy with this here.
     if "#{buffer}" is "blablablabla"
-      util.log "Ignore 'blablablabla' request."
+      log(socket, "Ignore 'blablablabla' request, maybe this is a test by 'poc.py'.")
       handle socket
       return
     try
@@ -150,7 +161,7 @@ server = net.createServer (socket) ->
         payload = payload.slice(0, payloadLength-1)
         handle socket, type, payload
       else
-        console.log "Skipping message because invalid header: #{header}"
+        log(socket, "Skipping message because invalid header: #{header}")
       return
     catch e
       log(socket, "Processing failed: #{e.message}")
@@ -158,12 +169,9 @@ server = net.createServer (socket) ->
 
   socket.on 'end', ->
     clients.splice(clients.indexOf(socket), 1)
-    console.log "Client (#{socket.name}) left."
-    return
 
   socket.on 'error', (error) ->
     clients.splice(clients.indexOf(socket), 1)
-    console.log "ERROR: #{util.inspect error}"
 
 server.listen PORT
 
