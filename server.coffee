@@ -22,9 +22,13 @@ PSEUDO_VERSION = '1.2.3'
 pseudoContext = {}
 clients = []
 
-# TODO: How we get the public ip?
-#require('dns').lookup require('os').hostname(), (err, address, fam) ->
-#  PSEUDO_PUBLIC_IP = address
+# If you would like to use canihazip.com, uncomment the following.
+# Otherwise, select any other website which returns your public ip.
+#require('http').request("http://canihazip.com/s", (res) ->
+#  res.on "data", (chunk) -> PSEUDO_PUBLIC_IP += chunk
+#  res.on "end", -> console.log "Resolved public ip to #{PSEUDO_PUBLIC_IP}"
+#).end()
+
 
 # build message data as byte buffer
 # @param code - the result/status code
