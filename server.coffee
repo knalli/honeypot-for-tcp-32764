@@ -165,12 +165,9 @@ server.on 'connection', (socket) ->
 
   socket.on 'end', ->
     clients.splice(clients.indexOf(socket), 1)
-    log(socket, "Client (#{socket.name}) left.")
-    return
 
   socket.on 'error', (error) ->
     clients.splice(clients.indexOf(socket), 1)
-    log(socket, "ERROR: #{util.inspect error}")
 
 server.listen 32764
 
