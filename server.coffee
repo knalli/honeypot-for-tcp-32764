@@ -20,7 +20,10 @@ PSEUDO_VERSION = '1.2.3'
 
 pseudoContext = {}
 clients = []
-logger = new require('LogRedis')()
+
+# Add redis logger with key-prefix
+#LogRedis = require './LogRedis'
+#loggers = [new LogRedis()]
 
 # TODO: How we get the public ip?
 #require('dns').lookup require('os').hostname(), (err, address, fam) ->
@@ -37,7 +40,8 @@ buildMessage = (code, payload = '') ->
 # Logging
 log = (socket, message) ->
   util.log "Attacker #{socket.name}: #{message}"
-  if logger then logger.log message
+  if loggers?.length
+    logger.log socket, message for logger in loggers
 
 # Handle an incoming call and response probably good..
 # @param socket - tcp socket
@@ -117,18 +121,24 @@ handle = (socket, type = 0, payload) ->
 
 
 # Create and open TCP server
-server = net.createServer (socket) ->
+server = net.createServer()
+
+# attach loggers
+if loggers?.length
+   logger.attachToServer server for logger in loggers
+
+server.on 'connection', (socket) ->
 
   # define some socket-only data
   socket.name = "#{socket.remoteAddress}:#{socket.remotePort}"
-  log "Client (#{socket.name}) joined..."
+  log(socket, "Client joined...")
 
   clients.push socket
 
   socket.on 'data', (buffer) ->
     # Make the "poc.py" be happy with this here.
     if "#{buffer}" is "blablablabla"
-      log "Ignore 'blablablabla' request."
+      log(socket, "Ignore 'blablablabla' request, maybe this is a test by 'poc.py'.")
       handle socket
       return
     try
@@ -147,7 +157,7 @@ server = net.createServer (socket) ->
         payload = payload.slice(0, payloadLength-1)
         handle socket, type, payload
       else
-        log "Skipping message because invalid header: #{header}"
+        log(socket, "Skipping message because invalid header: #{header}")
       return
     catch e
       log(socket, "Processing failed: #{e.message}")
@@ -155,12 +165,12 @@ server = net.createServer (socket) ->
 
   socket.on 'end', ->
     clients.splice(clients.indexOf(socket), 1)
-    log "Client (#{socket.name}) left."
+    log(socket, "Client (#{socket.name}) left.")
     return
 
   socket.on 'error', (error) ->
     clients.splice(clients.indexOf(socket), 1)
-    log "ERROR: #{util.inspect error}"
+    log(socket, "ERROR: #{util.inspect error}")
 
 server.listen 32764
 
