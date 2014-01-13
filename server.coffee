@@ -8,6 +8,7 @@ fs = require 'fs'
 require('buffertools').extend()
 
 # Message protocol statics
+PORT = 32764
 HEADER_ID = 0x53634D4D
 MESSAGE_PACK_FMT = '>III'
 WELCOME_HEADER = jspack.Pack MESSAGE_PACK_FMT, [HEADER_ID, 0xFFFFFFFF, 0x00000000]
@@ -25,9 +26,12 @@ clients = []
 #LogRedis = require './LogRedis'
 #loggers = [new LogRedis()]
 
-# TODO: How we get the public ip?
-#require('dns').lookup require('os').hostname(), (err, address, fam) ->
-#  PSEUDO_PUBLIC_IP = address
+# If you would like to use canihazip.com, uncomment the following.
+# Otherwise, select any other website which returns your public ip.
+#require('http').request("http://canihazip.com/s", (res) ->
+#  res.on "data", (chunk) -> PSEUDO_PUBLIC_IP += chunk
+#  res.on "end", -> console.log "Resolved public ip to #{PSEUDO_PUBLIC_IP}"
+#).end()
 
 # build message data as byte buffer
 # @param code - the result/status code
@@ -169,6 +173,6 @@ server.on 'connection', (socket) ->
   socket.on 'error', (error) ->
     clients.splice(clients.indexOf(socket), 1)
 
-server.listen 32764
+server.listen PORT
 
-console.log "Honeypot is running at 32764"
+console.log "Honeypot is running at #{PORT}"
