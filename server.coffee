@@ -8,6 +8,7 @@ fs = require 'fs'
 require('buffertools').extend()
 
 # Message protocol statics
+PORT = 32764
 HEADER_ID = 0x53634D4D
 MESSAGE_PACK_FMT = '>III'
 WELCOME_HEADER = jspack.Pack MESSAGE_PACK_FMT, [HEADER_ID, 0xFFFFFFFF, 0x00000000]
@@ -160,6 +161,6 @@ server = net.createServer (socket) ->
     clients.splice(clients.indexOf(socket), 1)
     console.log "ERROR: #{util.inspect error}"
 
-server.listen 32764
+server.listen PORT
 
-console.log "Honeypot is running at 32764"
+console.log "Honeypot is running at #{PORT}"
