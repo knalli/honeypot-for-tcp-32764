@@ -11,9 +11,9 @@ require('buffertools').extend()
 
 # Message protocol statics
 PORT = 32764
-HEADER_ID = 0x53634D4D
+SCM_MAGIC = 0x53634D4D
 MESSAGE_PACK_FMT = '>III'
-WELCOME_HEADER = jspack.Pack MESSAGE_PACK_FMT, [HEADER_ID, 0xFFFFFFFF, 0x00000000]
+WELCOME_HEADER = jspack.Pack MESSAGE_PACK_FMT, [SCM_MAGIC, 0xFFFFFFFF, 0x00000000]
 
 # Pseudos for the honey pot
 PSEUDO_LOCAL_IP = '192.168.1.1'
@@ -56,7 +56,7 @@ loggers = [
 # @param payload - optional string (text)
 # @return Buffer
 buildMessage = (code, payload = '') ->
-  header = jspack.Pack MESSAGE_PACK_FMT, [HEADER_ID, code, payload.length]
+  header = jspack.Pack MESSAGE_PACK_FMT, [SCM_MAGIC, code, payload.length]
   return new Buffer(header).concat(payload, '\x00')
 
 # Logging
@@ -176,7 +176,7 @@ server.on 'connection', (socket) ->
         return 
       [header, type, payloadLength] = unpackedBuffer
       #console.log util.inspect ({header, type, payloadLength}), colors: true, depth: null
-      if "#{header}" is "#{HEADER_ID}"
+      if "#{header}" is "#{SCM_MAGIC}"
         #console.log "Processing correct message, type=#{type}, payloadLength=#{payloadLength}"
         # first 12 bytes are for the header above, the rest is payload
         payload = buffer.slice(12).toString()
