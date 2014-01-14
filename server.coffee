@@ -179,6 +179,5 @@ server.on 'connection', (socket) ->
     log(socket, "Connection to client crashed")
     clients.splice(clients.indexOf(socket), 1)
 
-server.listen PORT
-
-console.log "Honeypot is running at #{PORT}"
+server.listen PORT, ->
+  console.log "Honeypot is running at #{PORT}"
