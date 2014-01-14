@@ -78,8 +78,7 @@ handle = (socket, type = 0, payload) ->
     when 1
       # Config
       log(socket, "Sending config...")
-      buffer = buildMessage 0, PSEUDO_CONFIGURATIONS[socket.$_pseudoConfigurationKey]
-      socket.write buffer
+      socket.write buildMessage 0, PSEUDO_CONFIGURATIONS[socket.$_pseudoConfigurationKey]
     when 2
       # Get var
       key = payload
