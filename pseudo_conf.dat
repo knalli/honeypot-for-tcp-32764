@@ -1,5 +1,0 @@
-Configuration export for Linksys WAG120N, generated at DATETIME
-
-open_ports: 21, 22, 80
-
-known_hosts: 10.0.0.2

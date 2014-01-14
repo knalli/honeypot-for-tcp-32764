@@ -1,6 +1,8 @@
 net = require 'net'
 util = require 'util'
-fs = require 'fs'
+FS = require 'fs'
+p = require 'path'
+Q = require 'q'
 
 # using jspack using the same Pack/Unpack like Python's one
 {jspack} = require 'jspack'
@@ -14,10 +16,24 @@ MESSAGE_PACK_FMT = '>III'
 WELCOME_HEADER = jspack.Pack MESSAGE_PACK_FMT, [HEADER_ID, 0xFFFFFFFF, 0x00000000]
 
 # Pseudos for the honey pot
-PSEUDO_CONF_CONTENT = fs.readFileSync('./pseudo_conf.dat').toString()
 PSEUDO_LOCAL_IP = '192.168.1.1'
 PSEUDO_PUBLIC_IP = ''
 PSEUDO_VERSION = '1.2.3'
+PSEUDO_CONFIGURATIONS = []
+
+# Read configuration examples
+readDirFiles = (path) -> 
+  readDir = Q.denodeify FS.readdir
+  readFile = Q.denodeify FS.readFile
+  readDir(path).then (files) ->
+    # extract to complete relative paths
+    files.map (file) -> p.join(path, file)
+  .then (files) ->
+    # spawn reads per file
+    Q.all files.map readFile
+readDirFiles('./pseudo_data').then (contents) ->
+  PSEUDO_CONFIGURATIONS = contents
+  log null, "Found #{contents.length} pseudo configurations."
 
 pseudoContext = {}
 clients = []
@@ -62,7 +78,7 @@ handle = (socket, type = 0, payload) ->
     when 1
       # Config
       log(socket, "Sending config...")
-      buffer = buildMessage 0, PSEUDO_CONF_CONTENT.replace('DATETIME', new Date().toString())
+      buffer = buildMessage 0, PSEUDO_CONFIGURATIONS[socket.$_pseudoConfigurationKey]
       socket.write buffer
     when 2
       # Get var
@@ -140,6 +156,9 @@ server.on 'connection', (socket) ->
   # define some socket-only data
   socket.name = "#{socket.remoteAddress}:#{socket.remotePort}"
   log(socket, "Client joined...")
+
+  # Choose a configuration random per socket
+  socket.$_pseudoConfigurationKey = Math.floor Math.random() * PSEUDO_CONFIGURATIONS.length
 
   clients.push socket
 
