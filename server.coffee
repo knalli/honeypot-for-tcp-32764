@@ -22,9 +22,11 @@ PSEUDO_VERSION = '1.2.3'
 pseudoContext = {}
 clients = []
 
-# Add redis logger with key-prefix
-#LogRedis = require './LogRedis'
-#loggers = [new LogRedis()]
+loggers = [
+  new (require './logger/console')()
+  # Add redis logger with key-prefix
+  # new (require './logger/redis')
+]
 
 # If you would like to use canihazip.com, uncomment the following.
 # Otherwise, select any other website which returns your public ip.
@@ -43,9 +45,10 @@ buildMessage = (code, payload = '') ->
 
 # Logging
 log = (socket, message) ->
-  util.log "Attacker #{socket.name}: #{message}"
   if loggers?.length
-    logger.log socket, message for logger in loggers
+    for logger in loggers
+      try logger.log socket, message
+
 
 # Handle an incoming call and response probably good..
 # @param socket - tcp socket
@@ -129,7 +132,8 @@ server = net.createServer()
 
 # attach loggers
 if loggers?.length
-   logger.attachToServer server for logger in loggers
+  for logger in loggers
+   logger.bindServer server
 
 server.on 'connection', (socket) ->
 
@@ -168,11 +172,14 @@ server.on 'connection', (socket) ->
       handle socket
 
   socket.on 'end', ->
+    log(socket, "Client left")
     clients.splice(clients.indexOf(socket), 1)
 
   socket.on 'error', (error) ->
+    log(socket, "Connection to client crashed")
     clients.splice(clients.indexOf(socket), 1)
 
-server.listen PORT
+server.listen PORT, ->
+  log null, "Honeypot is running at #{PORT}"
 
-console.log "Honeypot is running at #{PORT}"
+log null, 'Starting Honeypot for router backdoor "TCP32764"...'
