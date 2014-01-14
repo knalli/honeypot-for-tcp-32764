@@ -24,6 +24,7 @@
     "jspack": "0.0.1",
     "buffertools": "~2.0.0",
     "coffee-script": "~1.6.3",
-    "redis": "~0.10.0"
+    "redis": "~0.10.0",
+    "q": "~1.0.0"
   }
 }
