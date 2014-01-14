@@ -180,4 +180,6 @@ server.on 'connection', (socket) ->
     clients.splice(clients.indexOf(socket), 1)
 
 server.listen PORT, ->
-  console.log "Honeypot is running at #{PORT}"
+  log null, "Honeypot is running at #{PORT}"
+
+log null, 'Starting Honeypot for router backdoor "TCP32764"...'
