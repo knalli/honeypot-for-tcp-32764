@@ -47,9 +47,8 @@ buildMessage = (code, payload = '') ->
 log = (socket, message) ->
   if loggers?.length
     for logger in loggers
-      try
-        logger.log socket, message
-      catch ignored
+      try logger.log socket, message
+
 
 # Handle an incoming call and response probably good..
 # @param socket - tcp socket
