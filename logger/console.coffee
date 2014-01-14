@@ -11,7 +11,10 @@ class ConsoleLogger extends BaseLogger
     super(lookup)
 
   _log: (socket, message) ->
-    util.log "#{socket[@socketIdKey]} - #{message}"
+    if socket
+      util.log "#{socket[@socketIdKey]} - #{message}"
+    else
+      util.log message
 
   _error: (socket, message) ->
     util.error "#{socket[@socketIdKey]} - #{message}"
