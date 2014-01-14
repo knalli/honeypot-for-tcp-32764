@@ -18,7 +18,7 @@ WELCOME_HEADER = jspack.Pack MESSAGE_PACK_FMT, [SCM_MAGIC, 0xFFFFFFFF, 0x0000000
 # Pseudos for the honey pot
 PSEUDO_LOCAL_IP = '192.168.1.1'
 PSEUDO_PUBLIC_IP = ''
-PSEUDO_VERSION = '1.2.3'
+PSEUDO_VERSION = 'R.000000'
 PSEUDO_CONFIGURATIONS = []
 
 # Read configuration examples
@@ -128,7 +128,7 @@ handle = (socket, type = 0, payload) ->
       socket.write buildMessage 1, "Not supported"
     when 9
       log(socket, "version: #{payload}")
-      socket.write buildMessage 0, "#{PSEUDO_VERSION}"
+      socket.write buildMessage 0, "#{PSEUDO_VERSION}\x00"
     when 10
       log(socket, "modem router ip")
       socket.write buildMessage 0, "#{PSEUDO_LOCAL_IP}"
