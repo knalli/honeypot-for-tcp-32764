@@ -46,7 +46,7 @@ class BaseLogger
   # lookup and log it, asynchronously.
   hostnameLog: (socket) ->
     @dns.reverse socket.remoteAddress, (err, domains) =>
-      if err then return console.error "Could not resolve #{socket.remoteAddress} to hostname."
+      if err then return @log(socket, "Could not resolve #{socket.remoteAddress} to hostname.")
       @doHostnameLog(socket, domains)
 
   # Internal. Finish up logging this connection. Calculate duration.
