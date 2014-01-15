@@ -7,8 +7,8 @@ class ConsoleLogger extends BaseLogger
 
   name: 'Console'
 
-  constructor: (lookup = yes) ->
-    super(lookup)
+  constructor: (options) ->
+    super(options)
 
   _log: (socket, message) ->
     if socket
@@ -27,9 +27,7 @@ class ConsoleLogger extends BaseLogger
   # Internal. Log timeouts to the socket and calculate duration.
   doTimeoutLog: (socket) ->
     @_log socket, "Connection timed out after #{socket.duration/1000}s..."
-  
-  # Internal. If LogRedis was initializes with DNS lookup = yes, then do a DNS reverse
-  # lookup and log it, asynchronously.
+
   doHostnameLog: (socket, domains) ->
     @_log socket, "Reverse DNS: '#{domains.join(',')}'"
 
