@@ -6,7 +6,10 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "forever -w -c node_modules/.bin/coffee start server.coffee",
-    "stop": "forever -w -c node_modules/.bin/coffee stop server.coffee"
+    "stop": "forever -w -c node_modules/.bin/coffee stop server.coffee",
+    "list": "forever list",
+    "print-log": "forever logs server.coffee",
+    "tail-log": "tail -f `node_modules/.bin/forever --plain logs | sed -n '3p' | awk '{print $4}'`"
   },
   "author": {
     "name": "Jan Philipp",
