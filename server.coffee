@@ -181,6 +181,7 @@ server.on 'connection', (socket) ->
         payload = buffer.slice(12).toString()
         # Remove all data after the payload (should be only the zero byte sequence)
         payload = payload.slice(0, payloadLength-1)
+        log(socket, "Payload as bytes: [#{buffer.toJSON()}]")
         handle socket, type, payload
       else
         log(socket, "Skipping message because invalid header: #{header}")
