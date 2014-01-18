@@ -72,12 +72,12 @@ clients = []
 appConfig = loadConfig()
 loggers = loadLoggers(appConfig)
 
-# If you would like to use canihazip.com, uncomment the following.
-# Otherwise, select any other website which returns your public ip.
-#require('http').request("http://canihazip.com/s", (res) ->
-#  res.on "data", (chunk) -> PSEUDO_PUBLIC_IP += chunk
-#  res.on "end", -> console.log "Resolved public ip to #{PSEUDO_PUBLIC_IP}"
-#).end()
+# Configure publicIpResolve.url to any Server which responses your public ip as text
+if appConfig.publicIpResolve?.enabled and appConfig.publicIpResolve.url
+  require('http').request(appConfig.publicIpResolve.url, (res) ->
+    res.on "data", (chunk) -> PSEUDO_PUBLIC_IP += chunk
+    res.on "end", -> util.log "Resolved public ip to #{PSEUDO_PUBLIC_IP}"
+  ).end()
 
 # build message data as byte buffer
 # @param code - the result/status code
