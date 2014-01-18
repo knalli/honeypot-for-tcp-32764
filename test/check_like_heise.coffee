@@ -1,8 +1,6 @@
 net = require 'net'
 util = require 'util'
 
-scmmUtil = new require './../lib/scmm'
-
 socket = net.createConnection 32764, 'localhost'
 
 socket.on 'connect', ->
