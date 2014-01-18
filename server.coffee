@@ -168,6 +168,7 @@ server.on 'connection', (socket) ->
       handle socket
       return
     try
+      log(socket, "Message as bytes: [#{buffer.toJSON()}]")
       unpackedBuffer = jspack.Unpack(MESSAGE_PACK_FMT, buffer, 0)
       unless unpackedBuffer
         log(socket, "Processing failed: Invalid message")
@@ -181,7 +182,6 @@ server.on 'connection', (socket) ->
         payload = buffer.slice(12).toString()
         # Remove all data after the payload (should be only the zero byte sequence)
         payload = payload.slice(0, payloadLength-1)
-        log(socket, "Payload as bytes: [#{buffer.toJSON()}]")
         handle socket, type, payload
       else
         log(socket, "Skipping message because invalid header: #{header}")
