@@ -19,8 +19,6 @@ socket.on 'connect', ->
     util.log "          Unpacked:   #{util.inspect ScmmUtil.unpackFromBuffer('LE', buffer)}"
     util.log "Test finished OK".green
     socket.end()
-socket.on 'error', ->
-  util.error 'Could not connect'.red
 socket.on 'error', (error) ->
   util.error "Socket closed with error: #{error}".red
 socket.on 'timeout', ->

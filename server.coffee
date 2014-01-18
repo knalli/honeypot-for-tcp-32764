@@ -3,6 +3,7 @@ util = require 'util'
 FS = require 'fs'
 p = require 'path'
 Q = require 'q'
+ScmmUtil = require('./lib/scmm').Utils
 
 # using jspack using the same Pack/Unpack like Python's one
 {jspack} = require 'jspack'
@@ -17,9 +18,6 @@ DEFAULT_CONFIG =
 
 # Message protocol statics
 PORT = 32764
-SCM_MAGIC = 0x53634D4D
-MESSAGE_PACK_FMT = '>III'
-WELCOME_HEADER = jspack.Pack MESSAGE_PACK_FMT, [SCM_MAGIC, 0xFFFFFFFF, 0x00000000]
 
 # Pseudos for the honey pot
 PSEUDO_LOCAL_IP = '192.168.1.1'
@@ -83,9 +81,8 @@ if appConfig.publicIpResolve?.enabled and appConfig.publicIpResolve.url
 # @param code - the result/status code
 # @param payload - optional string (text)
 # @return Buffer
-buildMessage = (code, payload = '') ->
-  header = jspack.Pack MESSAGE_PACK_FMT, [SCM_MAGIC, code, payload.length]
-  return new Buffer(header).concat(payload, '\x00')
+buildMessageBuffer = (socket, code, payload = '') ->
+  ScmmUtil.packToBuffer socket.$_endianness, code, payload
 
 # Logging
 log = (socket, message) ->
@@ -102,20 +99,20 @@ handle = (socket, type = 0, payload) ->
   switch type
     when 0
       # Init
-      socket.write new Buffer(WELCOME_HEADER)
+      socket.write ScmmUtil.createInitSequenceBuffer socket.$_endianness
     when 1
       # Config
       log(socket, "Sending config...")
-      socket.write buildMessage 0, PSEUDO_CONFIGURATIONS[socket.$_pseudoConfigurationKey]
+      socket.write buildMessageBuffer socket, 0, PSEUDO_CONFIGURATIONS[socket.$_pseudoConfigurationKey]
     when 2
       # Get var
       key = payload
       val = pseudoContext[payload]
       log(socket, "Getting pseudo variable #{key} => '#{val}'")
       if typeof val isnt 'undefined'
-        socket.write buildMessage 0, val
+        socket.write buildMessageBuffer socket, 0, val
       else
-        socket.write buildMessage 1, "Variable '#{key}' not found."
+        socket.write buildMessageBuffer socket, 1, "Variable '#{key}' not found."
     when 3
       # Set var
       parts = payload.split('=', 2)
@@ -124,50 +121,50 @@ handle = (socket, type = 0, payload) ->
       log(socket, "Setting pseudo variable #{key} => '#{val}'")
       if parts.length >= 2 and key
         pseudoContext[key] = val
-        socket.write buildMessage 0, "Variable '#{key}' => '#{val}'."
+        socket.write buildMessageBuffer socket, 0, "Variable '#{key}' => '#{val}'."
       else
-        socket.write buildMessage 1, "Missing parameters"
+        socket.write buildMessageBuffer socket, 1, "Missing parameters"
     when 4
       log(socket, "commit nvram: #{payload}")
-      socket.write buildMessage 1, "Not supported"
+      socket.write buildMessageBuffer socket, 1, "Not supported"
     when 5
       log(socket, "bridge mode: #{payload}")
-      socket.write buildMessage 1, "Not supported"
+      socket.write buildMessageBuffer socket, 1, "Not supported"
     when 6
       log(socket, "show speed: #{payload}")
-      socket.write buildMessage 0, "127"
+      socket.write buildMessageBuffer socket, 0, "127"
     when 7
       socket._shellIsOpen = true
       log(socket, "execute/cmd: #{payload}")
       switch payload
         when 'cd'
           parts = payload.split(' ', 2)
-          socket.write buildMessage 0, "Directory changed to '#{parts[1]}'"
+          socket.write buildMessageBuffer socket, 0, "Directory changed to '#{parts[1]}'"
         when 'quit', 'exit', 'bye'
           socket._shellIsOpen = false
-          socket.write buildMessage 0, "Exit\n"
+          socket.write buildMessageBuffer socket, 0, "Exit\n"
           # FIXME destroy too early?
           socket.destroy()
         else
-          socket.write buildMessage 0, "#{payload}"
+          socket.write buildMessageBuffer socket, 0, "#{payload}"
     when 8
       log(socket, "write file: #{payload}")
-      socket.write buildMessage 1, "Not supported"
+      socket.write buildMessageBuffer socket, 1, "Not supported"
     when 9
       log(socket, "version: #{payload}")
-      socket.write buildMessage 0, "#{PSEUDO_VERSION}\x00"
+      socket.write buildMessageBuffer socket, 0, "#{PSEUDO_VERSION}\x00"
     when 10
       log(socket, "modem router ip")
-      socket.write buildMessage 0, "#{PSEUDO_LOCAL_IP}"
+      socket.write buildMessageBuffer socket, 0, "#{PSEUDO_LOCAL_IP}"
     when 11
       log(socket, "resaure default setting")
-      socket.write buildMessage 1, "Not supported"
+      socket.write buildMessageBuffer socket, 1, "Not supported"
     when 12
       log(socket, "read /dev/mtdblock/0")
-      socket.write buildMessage 1, "Not supported"
+      socket.write buildMessageBuffer socket, 1, "Not supported"
     when 13
       log(socket, "ump nvram on disk")
-      socket.write buildMessage 1, "Not supported"
+      socket.write buildMessageBuffer socket, 1, "Not supported"
 
 
 # Create and open TCP server
@@ -190,33 +187,33 @@ server.on 'connection', (socket) ->
   clients.push socket
 
   socket.on 'data', (buffer) ->
+    log(socket, "Message as bytes: [#{buffer.toJSON()}]")
+    endianness = ScmmUtil.resolveEndianness buffer
+    socket.$_endianness = endianness if endianness
+    log(socket, "Client using endianness=#{endianness}")
     # Make the "poc.py" be happy with this here.
     if "#{buffer}" is "blablablabla"
       log(socket, "Ignore 'blablablabla' request, maybe this is a test by 'poc.py'.")
       handle socket
       return
     try
-      log(socket, "Message as bytes: [#{buffer.toJSON()}]")
-      unpackedBuffer = jspack.Unpack(MESSAGE_PACK_FMT, buffer, 0)
+      unpackedBuffer = ScmmUtil.unpackFromBuffer endianness, buffer
       unless unpackedBuffer
-        log(socket, "Processing failed: Invalid message")
+        log(socket, "Processing failed: Invalid message or header")
         handle socket
         return 
-      [header, type, payloadLength] = unpackedBuffer
+      {header, type, payloadLength} = unpackedBuffer
       #console.log util.inspect ({header, type, payloadLength}), colors: true, depth: null
-      if "#{header}" is "#{SCM_MAGIC}"
-        #console.log "Processing correct message, type=#{type}, payloadLength=#{payloadLength}"
-        # first 12 bytes are for the header above, the rest is payload
-        payload = buffer.slice(12).toString()
-        # Remove all data after the payload (should be only the zero byte sequence)
-        payload = payload.slice(0, payloadLength-1)
-        handle socket, type, payload
-      else
-        log(socket, "Skipping message because invalid header: #{header}")
-      return
+      #console.log "Processing correct message, type=#{type}, payloadLength=#{payloadLength}"
+      # first 12 bytes are for the header above, the rest is payload
+      payload = buffer.slice(12).toString()
+      # Remove all data after the payload (should be only the zero byte sequence)
+      payload = payload.slice(0, payloadLength-1)
+      handle socket, type, payload
     catch e
       log(socket, "Processing failed: #{e.message}")
       handle socket
+    return
 
   socket.on 'end', ->
     log(socket, "Client left")
