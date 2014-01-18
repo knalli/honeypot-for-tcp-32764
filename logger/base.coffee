@@ -15,7 +15,8 @@ class BaseLogger
   # @param lookup - Do DNS lookups for every connect
   # @param redisPrefix - Use prefix for Redis DB Keys
   # @param redisSettings... - Settings for Redis constructor
-  constructor: (@lookup = yes) ->
+  constructor: (options) ->
+    @lookup = options?.lookup isnt false
     if @lookup then @dns = require 'dns'
     @socketIdKey = "$_id#{Math.round Math.random() * 10000}"
 

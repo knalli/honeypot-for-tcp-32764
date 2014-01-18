@@ -8,18 +8,21 @@ BaseLogger = require './base'
   Logger class for 'honeypot-for-tcp-32764'
   An instance of this logger has to be attached to a Server instance at first place! 
   Otherwise, the sockets aren't initialized correctly.
-  The following example adds two loggers:
+  The following example adds three loggers:
    - The first one sets DNS Reverse-Lookups to yes, and prefixes all Keys with 'honey1'. 
      That means, if an attacker has ip 1.2.3.4, you can get the logs 
      by redis command "GET honey1.'1.2.3.4'.lastlog". The defaults for the redis connection 
      are used, which are localhost at port 6379.
-   - The second Logger does not do DNS reverse Lookups, uses prefix 'honey2' and connects to
+   - The second logger does not do DNS reverse lookups, uses prefix 'honey2' and connects to
      'server2' at redis default port. For convinience, this is a constant in LogRedis.
+   - The third logger does not do DNS reverse lookups, uses prefix 'honey3' and connects to 
+     'server3' at port '1234'. Additionally, this add a custom options map.
      
     LogRedis = require './LogRedis'
     loggers = [
-      new LogRedis(yes, 'honey1')
-      new LogRedis(no , 'honey2',  LogRedis.DEFAULT_REDIS_PORT, 'server')
+      new LogRedis(yes, {prefix: 'honey1'})
+      new LogRedis(no , {prefix: 'honey2', port: LogRedis.DEFAULT_REDIS_PORT, host: 'server'})
+      new LogRedis(no , {prefix: 'honey3', port: 1234, host: 'server', options: {no_ready_check: true}})
     ]
 ###
 class RedisLogger extends BaseLogger
@@ -28,16 +31,25 @@ class RedisLogger extends BaseLogger
 
   # The redis connection port can be ommited to use the lib's default
   # For easier reading, this var can be used, anyway
-  @DEFAULT_REDIS_PORT: null
+  @DEFAULT_REDIS_PORT: null #6379
 
   # @param lookup - Do DNS lookups for every connect
-  # @param redisPrefix - Use prefix for Redis DB Keys
-  # @param redisSettings... - Settings for Redis constructor
-  constructor: (lookup = yes, @redisPrefix = '', redisSettings...) ->
-    super(lookup)
+  # @param options
+  #                prefix - Optional: Use prefix for Redis DB Keys
+  #                host - Optional: server host
+  #                port - Optional: server port
+  #                options -Optional: Options for Redis constructor
+  constructor: (options) ->
+    super(options)
+    @redisPrefix = options.prefix or ''
     if @redisPrefix?.substr(-1) isnt '.'
       @redisPrefix += '.'
-    @db = redis.createClient redisSettings...
+    redisPort = options?.port or RedisLogger.DEFAULT_REDIS_PORT
+    redisHost = options?.host or 'localhost'
+    redisOptions = options?.options or []
+    unless Object::toString.call(redisOptions) is '[object Array]'
+      redisOptions = [ redisOptions ]
+    @db = redis.createClient redisPort, redisHost, redisOptions
 
   # Internal. Log start of a connection and save DB Prefix on socket object.
   doConnectLog: (socket) ->

@@ -9,6 +9,12 @@ Q = require 'q'
 # Extending Buffer
 require('buffertools').extend()
 
+DEFAULT_CONFIG =
+  loggers: [ 
+    (name: 'console', enabled: true)
+    (name: 'redis',   enabled: false)
+  ]
+
 # Message protocol statics
 PORT = 32764
 SCM_MAGIC = 0x53634D4D
@@ -31,25 +37,47 @@ readDirFiles = (path) ->
   .then (files) ->
     # spawn reads per file
     Q.all files.map readFile
+
+loadConfig = ->
+  config = try
+    config = require './config.json'
+    util.log "Using local configuration file: config.json"
+    for own key, value of DEFAULT_CONFIG when not config[key]
+      config[key] = value
+    config
+  catch
+    DEFAULT_CONFIG
+  util.log "Active configuration is"
+  util.log util.inspect config, colors: true, depth: null
+  return config
+
+loadLoggers = (appConfig) ->
+  onlyEnabled = (config) ->
+    config?.enabled is true
+  notNull = (object) ->
+    typeof object isnt 'undefined'
+  requireModule = (config) ->
+    try 
+      new (require "./logger/#{config.name}")(config.options)
+    catch e
+      util.error "Could not find logger #{config.name} -- caused by #{e.message}"
+  appConfig.loggers.filter(onlyEnabled).map(requireModule).filter(notNull)
+
 readDirFiles('./pseudo_data').then (contents) ->
   PSEUDO_CONFIGURATIONS = contents
   log null, "Found #{contents.length} pseudo configurations."
 
 pseudoContext = {}
 clients = []
+appConfig = loadConfig()
+loggers = loadLoggers(appConfig)
 
-loggers = [
-  new (require './logger/console')()
-  # Add redis logger with key-prefix
-  # new (require './logger/redis')
-]
-
-# If you would like to use canihazip.com, uncomment the following.
-# Otherwise, select any other website which returns your public ip.
-#require('http').request("http://canihazip.com/s", (res) ->
-#  res.on "data", (chunk) -> PSEUDO_PUBLIC_IP += chunk
-#  res.on "end", -> console.log "Resolved public ip to #{PSEUDO_PUBLIC_IP}"
-#).end()
+# Configure publicIpResolve.url to any Server which responses your public ip as text
+if appConfig.publicIpResolve?.enabled and appConfig.publicIpResolve.url
+  require('http').request(appConfig.publicIpResolve.url, (res) ->
+    res.on "data", (chunk) -> PSEUDO_PUBLIC_IP += chunk
+    res.on "end", -> util.log "Resolved public ip to #{PSEUDO_PUBLIC_IP}"
+  ).end()
 
 # build message data as byte buffer
 # @param code - the result/status code
