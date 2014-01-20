@@ -4,6 +4,7 @@ FS = require 'fs'
 p = require 'path'
 Q = require 'q'
 ScmmUtil = require('./lib/scmm').Utils
+ByteUtils = new (require('./lib/bytes').Utils)(prefixLength: 36, prefixChar: ' ', prefixInFirstRow: false)
 
 # using jspack using the same Pack/Unpack like Python's one
 {jspack} = require 'jspack'
@@ -187,6 +188,7 @@ server.on 'connection', (socket) ->
   clients.push socket
 
   socket.on 'data', (buffer) ->
+    util.log "Incoming buffer: #{ByteUtils.buildTable(buffer)}"
     log(socket, "Message as bytes: [#{buffer.toJSON()}]")
     endianness = ScmmUtil.resolveEndianness buffer
     socket.$_endianness = endianness if endianness
