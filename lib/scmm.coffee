@@ -30,6 +30,8 @@ class Utils
     return {header, type, payloadLength}
 
   @packToBuffer: (endianness = 'BE', code = 0, payload = '') ->
+    payload = payload.toString() if Buffer.isBuffer(payload)
+    payload = payload.split('\n').join('\x00').split('\t').join('\x01')
     header = jspack.Pack Utils.FORMATS[endianness], [SCM_MAGIC, code, payload.length]
     return new Buffer(header).concat(payload, '\x00')
 
