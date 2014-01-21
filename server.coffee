@@ -32,10 +32,12 @@ readDirFiles = (path) ->
   readFile = Q.denodeify FS.readFile
   readDir(path).then (files) ->
     # extract to complete relative paths
-    files.map (file) -> p.join(path, file)
+    files.map (file) -> 
+      p.join(path, file)
   .then (files) ->
     # spawn reads per file
-    Q.all files.map readFile
+    Q.all files.map (file) ->
+      readFile(file)
 
 loadConfig = ->
   config = try
@@ -63,7 +65,7 @@ loadLoggers = (appConfig) ->
   appConfig.loggers.filter(onlyEnabled).map(requireModule).filter(notNull)
 
 readDirFiles('./pseudo_data').then (contents) ->
-  PSEUDO_CONFIGURATIONS = contents
+  PSEUDO_CONFIGURATIONS = (content.toString() for content in contents)
   log null, "Found #{contents.length} pseudo configurations."
 
 pseudoContext = {}
@@ -184,6 +186,7 @@ server.on 'connection', (socket) ->
 
   # Choose a configuration random per socket
   socket.$_pseudoConfigurationKey = Math.floor Math.random() * PSEUDO_CONFIGURATIONS.length
+  log(socket, "Random Config #{socket.$_pseudoConfigurationKey+1} of #{PSEUDO_CONFIGURATIONS.length}")
 
   clients.push socket
 
