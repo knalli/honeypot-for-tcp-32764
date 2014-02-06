@@ -22,6 +22,13 @@ NodeJS
 
 There are two user scripts defined in the `package.json` which instruments [Forever](https://github.com/nodejitsu/forever). Simply use `npm start` to start the server and `npm stop` to stop the server. The flag `-w` is used therefor any file changes will effectily restart the server in a second.
 
+## How to monitor
+
+There are following user scripts defined for an easy access to the log:
+
+* `npm run-script print-log` printing out the log file of the current daemon (started by `npm start`)
+* `npm run-script tail-log` tailing out the log file of the current daemon (started by `npm start`)
+
 ## Contribution
 
 Yes, if you like.
